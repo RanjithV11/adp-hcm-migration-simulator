@@ -1,0 +1,22 @@
+name: Pipeline Verification
+
+on: [push, pull_request]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run pipeline
+        run: |
+          docker compose up --build --abort-on-container-exit
+      - name: Check validation
+        run: |
+          docker compose run --rm etl python -c "
+import json, glob
+latest = max(glob.glob('output/validation_report_*.json'))
+with open(latest) as f:
+    r = json.load(f)
+    assert r['summary']['fail'] == 0, f'FAIL: {r[\"summary\"][\"fail\"]} failures'
+    print('✅ All validations passed')
+"
