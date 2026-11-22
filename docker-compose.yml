@@ -1,0 +1,74 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: adp_pg
+    environment:
+      POSTGRES_DB: migration_demo
+      POSTGRES_USER: etl
+      POSTGRES_PASSWORD: etl
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init_sql:/docker-entrypoint-initdb.d
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U etl -d migration_demo"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mongodb:
+    image: mongo:7
+    container_name: adp_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: adp_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  etl:
+    build: .
+    container_name: adp_etl
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - PYTHONPATH=/app
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - MONGO_HOST=mongodb
+      - MONGO_PORT=27017
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    # Run seed script first, then pipeline
+    command: >
+      sh -c "python -m src.utils.seed_data && python run_pipeline.py"
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+      - ./init_sql:/app/init_sql
+      - ./output:/app/output
+      - ./.encryption_key:/app/.encryption_key
+
+volumes:
+  pgdata:
+  mongodata:

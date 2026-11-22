@@ -1,0 +1,22 @@
+source_table,source_field,target_table,target_field,transform_rule,validation_rule,exception_handling,notes
+legacy_hr.employees,emp_id,adp_hcm.hcm_employee,employee_id,TRIM(UPPER(emp_id)),NOT NULL UNIQUE,REJECT_ROW,Primary key
+legacy_hr.employees,first_name,adp_hcm.hcm_employee,legal_first_name,INITCAP(TRIM(first_name)),NOT NULL LEN<=50,DEFAULT 'Unknown',
+legacy_hr.employees,last_name,adp_hcm.hcm_employee,legal_last_name,INITCAP(TRIM(last_name)),NOT NULL LEN<=50,DEFAULT 'Unknown',
+legacy_hr.employees,email,adp_hcm.hcm_employee,work_email,LOWER(TRIM(email)),FORMAT EMAIL,LOG_WARNING,
+legacy_hr.employees,hire_date,adp_hcm.hcm_employee,hire_date,TO_DATE(hire_date, 'YYYY-MM-DD'),NOT NULL,REJECT_ROW,
+legacy_hr.employees,termination_date,adp_hcm.hcm_employee,termination_date,TO_DATE(termination_date, 'YYYY-MM-DD'),NULLABLE,SET_NULL,
+legacy_hr.employees,status_code,adp_hcm.hcm_employee,worker_status_cd,MAP_STATUS(status_code),IN ('ACTIVE','TERMINATED','LOA','REHIRE'),DEFAULT 'ACTIVE',Ref table: ref_status_mapping
+legacy_hr.employees,dept_code,adp_hcm.hcm_employee,department_id,LOOKUP_DEPT(dept_code),FK EXISTS,SET_NULL LOG_ORPHAN,
+legacy_hr.employees,job_code,adp_hcm.hcm_employee,job_id,LOOKUP_JOB(job_code),FK EXISTS,SET_NULL LOG_ORPHAN,
+legacy_hr.employees,salary_numeric,adp_hcm.hcm_employee,annual_salary_usd,CONVERT_CURRENCY(salary_numeric, currency_cd),RANGE 15000-500000,FLAG_REVIEW,
+legacy_hr.employees,currency_cd,adp_hcm.hcm_employee,annual_salary_usd,CONVERT_CURRENCY(salary_numeric, currency_cd),IN ('USD','INR'),DEFAULT 'USD',
+legacy_hr.employees,manager_emp_id,adp_hcm.hcm_employee,manager_person_id,LOOKUP_MANAGER(manager_emp_id),FK EXISTS,SET_NULL,
+legacy_hr.employees,address_line1,adp_hcm.hcm_address,address_line1,TRIM(address_line1),NOT NULL,DEFAULT '',
+legacy_hr.employees,city,adp_hcm.hcm_address,city,TRIM(city),NOT NULL,DEFAULT '',
+legacy_hr.employees,state,adp_hcm.hcm_address,state_province,TRIM(state),NOT NULL,DEFAULT '',
+legacy_hr.employees,zip_code,adp_hcm.hcm_address,postal_code,TRIM(zip_code),NOT NULL,DEFAULT '',
+legacy_hr.employees,country_cd,adp_hcm.hcm_address,country_cd,UPPER(TRIM(country_cd)),IN ('US','IN'),DEFAULT 'US',
+legacy_hr.employees,ssn,adp_hcm.hcm_employee,ssn_encrypted,ENCRYPT_SSN(ssn),FORMAT SSN,REJECT_ROW IF NOT NULL,AES-256 encryption
+legacy_hr.employees,dob,adp_hcm.hcm_employee,date_of_birth,TO_DATE(dob, 'YYYY-MM-DD'),AGE 18-100,SET_NULL,
+legacy_hr.employees,gender,adp_hcm.hcm_employee,gender_cd,UPPER(TRIM(gender)),IN ('M','F','X'),DEFAULT 'X',
+legacy_hr.employees,created_ts,adp_hcm.hcm_employee,created_dt,TO_TIMESTAMP(created_ts),NOT NULL,DEFAULT NOW(),
